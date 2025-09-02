@@ -436,10 +436,22 @@ Description: Write a CTAS query to create a new table that lists each member and
 			the books they have issued but not returned within 30 days. The table should include:
     The number of overdue books.
     The total fines, with each day's fine calculated at $0.50.
-    The number of books issued by each member.
     The resulting table should show:
     Member ID
     Number of overdue books
     Total fines
 */
 
+DROP TABLE IF EXISTS CTAS
+
+select m.member_id
+,COUNT(ist.issued_book_isbn) as Total_Books_Overdue 
+,SUM(((DATEDIFF(DAY,ist.issued_date,GETDATE())-30)*0.50)) as TotalFine 
+into CTAS
+from members m
+JOIN issued_status ist ON m.member_id=ist.issued_member_id
+LEFT JOIN return_status rs ON rs.issued_id=ist.issued_id
+where rs.issued_id is null and DATEDIFF(DAY,ist.issued_date,GETDATE())>30
+group by m.member_id
+
+select * from CTAS
